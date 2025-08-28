@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PAWAR — Details Saving App</title>
+  <style>
+    :root{--bg:#0f172a;--card:#111827;--muted:#1f2937;--text:#e5e7eb;--accent:#22c55e;--danger:#ef4444;--warn:#f59e0b}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial;line-height:1.4;background:linear-gradient(180deg,#0b1220,#0f172a);color:var(--text)}
+    header{padding:18px 20px;background:#0b1020;position:sticky;top:0;z-index:5;border-bottom:1px solid #1f2937}
+    h1{margin:0;font-size:22px;letter-spacing:.5px}
+    .wrap{max-width:1100px;margin:0 auto;padding:20px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+    .card{background:var(--card);border:1px solid #1f2937;border-radius:16px;box-shadow:0 10px 25px rgba(0,0,0,.25)}
+    .card h2{margin:0 0 12px 0;font-size:18px}
+    .pad{padding:16px}
+    label{font-size:13px;opacity:.9}
+    input,textarea,select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #2b3546;background:#0b1220;color:var(--text)}
+    textarea{min-height:72px;resize:vertical}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .btn{cursor:pointer;border:none;border-radius:12px;padding:10px 14px;font-weight:600}
+    .btn.accent{background:var(--accent);color:#08130a}
+    .btn.muted{background:#334155;color:#e5e7eb}
+    .btn.warn{background:var(--warn);color:#231a04}
+    .btn.danger{background:var(--danger);color:#2b0a0a}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .actions{display:flex;gap:10px;flex-wrap:wrap}
+    .tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .tools input{max-width:260px}
+    table{width:100%;border-collapse:collapse}
+    thead th{position:sticky;top:0;background:#0d1425;border-bottom:1px solid #243045;padding:10px;font-size:13px;text-align:left}
+    tbody td{border-bottom:1px solid #1f2937;padding:10px;vertical-align:middle}
+    tbody tr:hover{background:#0c1629}
+    .photo{width:56px;height:56px;border-radius:10px;object-fit:cover;border:1px solid #243045;background:#0b1220}
+    .badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#0b1220;border:1px solid #2b3546;font-size:12px}
+    .right{display:flex;justify-content:flex-end}
+    .center{display:flex;justify-content:center;align-items:center}
+    .pagination{display:flex;gap:8px;align-items:center}
+    .pagination button{background:#273449;color:#e5e7eb;border:1px solid #334155;border-radius:10px;padding:6px 10px}
+    .sr{width:52px;text-align:center}
+    .nowrap{white-space:nowrap}
+    .hidden{display:none}
+    .note{font-size:12px;opacity:.8}
+    footer{padding:20px;color:#9ca3af;text-align:center}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap" style="display:flex;align-items:center;gap:10px;justify-content:space-between">
+      <h1>PAWAR — Details Saving</h1>
+      <div class="badge" id="totalCount">0 records</div>
+    </div>
+  </header>
+
+  <div class="wrap grid">
+    <!-- Form Card -->
+    <section class="card">
+      <div class="pad">
+        <h2>नई एंट्री जोड़ें / Update</h2>
+        <form id="entryForm">
+          <input type="hidden" id="editId" />
+          <div class="row">
+            <div>
+              <label>नाम (Name)</label>
+              <input id="name" required placeholder="उदा: Dronacharya Pawar" />
+            </div>
+            <div>
+              <label>पिता का नाम (Father Name)</label>
+              <input id="fatherName" required placeholder="उदा: Shri XYZ" />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label>मोबाइल नंबर (Phone)</label>
+              <input id="phone" required inputmode="numeric" pattern="[0-9]{10}" placeholder="10 अंकों का मोबाइल" />
+            </div>
+            <div>
+              <label>फोटो (JPG/PNG)</label>
+              <input id="photo" type="file" accept="image/*" />
+            </div>
+          </div>
+          <div>
+            <label>पूरा पता (Address)</label>
+            <textarea id="address" required placeholder="घर, गली, शहर, पिन"></textarea>
+          </div>
+          <div class="actions" style="margin-top:12px">
+            <button class="btn accent" id="saveBtn" type="submit">Save</button>
+            <button class="btn muted" id="resetBtn" type="button">Reset</button>
+            <button class="btn warn" id="dummyBtn" type="button" title="Test data (x10)">Add 10 Demo</button>
+          </div>
+          <div class="note" style="margin-top:8px">नोट: डेटा आपके ब्राउज़र में सुरक्षित रहेगा (IndexedDB). 200+ एंट्री आराम से सेव होंगी।</div>
+        </form>
+      </div>
+    </section>
+
+    <!-- Table / Tools Card -->
+    <section class="card">
+      <div class="pad">
+        <h2>रिकॉर्ड्स</h2>
+        <div class="tools">
+          <input id="search" placeholder="Search name / phone / address" />
+          <select id="sortBy">
+            <option value="createdDesc">Newest first</option>
+            <option value="createdAsc">Oldest first</option>
+            <option value="nameAsc">Name A→Z</option>
+            <option value="nameDesc">Name Z→A</option>
+          </select>
+          <button class="btn muted" id="exportCsv">Export CSV</button>
+          <button class="btn muted" id="exportJson">Export JSON</button>
+          <label class="btn muted" for="importJsonFile" style="cursor:pointer">Import JSON</label>
+          <input id="importJsonFile" type="file" accept="application/json" class="hidden" />
+          <span style="flex:1"></span>
+          <button class="btn danger" id="clearAll">Clear All</button>
+        </div>
+        <div style="overflow:auto;margin-top:10px;max-height:520px;border:1px solid #243045;border-radius:12px">
+          <table>
+            <thead>
+              <tr>
+                <th class="sr">SR</th>
+                <th>Photo</th>
+                <th>Name</th>
+                <th>Father Name</th>
+                <th>Phone</th>
+                <th>Address</th>
+                <th class="nowrap">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+        <div class="right" style="margin-top:10px">
+          <div class="pagination">
+            <button id="prev">Prev</button>
+            <span id="pageInfo" class="badge">Page 1 / 1</span>
+            <button id="next">Next</button>
+            <select id="pageSize">
+              <option>10</option>
+              <option selected>25</option>
+              <option>50</option>
+              <option>100</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    © <span id="year"></span> PAWAR — Details Manager. All data stored locally on your device.
+  </footer>
+
+  <script>
+    // ----------------- IndexedDB Setup -----------------
+    const DB_NAME = 'PAWAR_DB';
+    const DB_VERSION = 1;
+    const STORE = 'people';
+    let db;
+
+    function openDB(){
+      return new Promise((resolve, reject)=>{
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e)=>{
+          const db = e.target.result;
+          if(!db.objectStoreNames.contains(STORE)){
+            const store = db.createObjectStore(STORE,{keyPath:'id',autoIncrement:true});
+            store.createIndex('createdAt','createdAt',{unique:false});
+            store.createIndex('name','name',{unique:false});
+            store.createIndex('phone','phone',{unique:false});
+          }
+        };
+        req.onsuccess = ()=>{db=req.result; resolve(db)};
+        req.onerror = ()=>reject(req.error);
+      });
+    }
+
+    function addEntry(rec){
+      return new Promise((resolve,reject)=>{
+        const tx=db.transaction(STORE,'readwrite');
+        tx.objectStore(STORE).add(rec).onsuccess=(e)=>resolve(e.target.result);
+        tx.onerror=()=>reject(tx.error);
+      });
+    }
+    function updateEntry(id, rec){
+      return new Promise((resolve,reject)=>{
+        const tx=db.transaction(STORE,'readwrite');
+        const store=tx.objectStore(STORE);
+        const getReq=store.get(id);
+        getReq.onsuccess=()=>{
+          const current=getReq.result; if(!current) return reject('Not found');
+          store.put({...current,...rec,id});
+        };
+        tx.oncomplete=()=>resolve(true);
+        tx.onerror=()=>reject(tx.error);
+      });
+    }
+    function deleteEntry(id){
+      return new Promise((resolve,reject)=>{
+        const tx=db.transaction(STORE,'readwrite');
+        tx.objectStore(STORE).delete(id);
+        tx.oncomplete=()=>resolve(true);
+        tx.onerror=()=>reject(tx.error);
+      });
+    }
+    function getAll(){
+      return new Promise((resolve,reject)=>{
+        const tx=db.transaction(STORE,'readonly');
+        const req=tx.objectStore(STORE).getAll();
+        req.onsuccess=()=>resolve(req.result||[]);
+        req.onerror=()=>reject(req.error);
+      });
+    }
+    function clearAll(){
+      return new Promise((resolve,reject)=>{
+        const tx=db.transaction(STORE,'readwrite');
+        tx.objectStore(STORE).clear();
+        tx.oncomplete=()=>resolve(true);
+        tx.onerror=()=>reject(tx.error);
+      });
+    }
+
+    // ----------------- Image Helpers -----------------
+    function fileToCompressedBlob(file, maxW=700){
+      if(!file) return Promise.resolve(null);
+      return new Promise((resolve,reject)=>{
+        const img=new Image();
+        const reader=new FileReader();
+        reader.onload=()=>{img.src=reader.result};
+        reader.onerror=()=>reject(reader.error);
+        img.onload=()=>{
+          const ratio=img.width>maxW?maxW/img.width:1;
+          const w=img.width*ratio, h=img.height*ratio;
+          const canvas=document.createElement('canvas');
+          canvas.width=w; canvas.height=h;
+          const ctx=canvas.getContext('2d');
+          ctx.drawImage(img,0,0,w,h);
+          canvas.toBlob(blob=>resolve(blob),'image/jpeg',0.82);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+    function blobToURL(blob){ return blob?URL.createObjectURL(blob):'' }
+
+    // ----------------- UI State -----------------
+    const state={
+      all:[], filtered:[], page:1, pageSize:25, sortBy:'createdDesc', search:''
+    };
+
+    function applyFilters(){
+      const q=state.search.trim().toLowerCase();
+      let arr=[...state.all];
+      if(q){
+        arr=arr.filter(r=>[r.name,r.fatherName,r.phone,r.address].some(x=>String(x||'').toLowerCase().includes(q)));
+      }
+      // sort
+      const s=state.sortBy;
+      arr.sort((a,b)=>{
+        if(s==='createdDesc') return b.createdAt-a.createdAt;
+        if(s==='createdAsc') return a.createdAt-b.createdAt;
+        if(s==='nameAsc') return String(a.name||'').localeCompare(String(b.name||''));
+        if(s==='nameDesc') return String(b.name||'').localeCompare(String(a.name||''));
+        return 0;
+      });
+      state.filtered=arr;
+      const maxPage=Math.max(1, Math.ceil(arr.length/state.pageSize));
+      if(state.page>maxPage) state.page=maxPage;
+      renderTable();
+    }
+
+    function renderTable(){
+      const tbody=document.getElementById('tbody');
+      tbody.innerHTML='';
+      const start=(state.page-1)*state.pageSize;
+      const rows=state.filtered.slice(start,start+state.pageSize);
+      const total=state.filtered.length;
+      document.getElementById('totalCount').textContent=`${state.all.length} records`;
+      document.getElementById('pageInfo').textContent=`Page ${state.page} / ${Math.max(1, Math.ceil(total/state.pageSize))}`;
+
+      rows.forEach((r,i)=>{
+        const tr=document.createElement('tr');
+        const sr=start+i+1; // serial number (visible order)
+        tr.innerHTML=`
+          <td class="sr">${sr}</td>
+          <td>${r.photo?`<img class="photo" src="${blobToURL(r.photo)}">`:'—'}</td>
+          <td>${escapeHtml(r.name)}</td>
+          <td>${escapeHtml(r.fatherName)}</td>
+          <td class="nowrap">${escapeHtml(r.phone)}</td>
+          <td>${escapeHtml(r.address)}</td>
+          <td class="nowrap">
+            <button class="btn muted" data-act="edit" data-id="${r.id}">Edit</button>
+            <button class="btn danger" data-act="del" data-id="${r.id}">Delete</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function escapeHtml(s){
+      return String(s??'').replace(/[&<>\"']/g,m=>({"&":"&amp;","<":"&lt;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m]));
+    }
+
+    // ----------------- Export / Import -----------------
+    function download(filename, blob){
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob);
+      a.download=filename; a.click(); URL.revokeObjectURL(a.href);
+    }
+    async function exportCSV(){
+      const all=await getAll();
+      const header=['id','name','fatherName','phone','address','createdAt'];
+      const lines=[header.join(',')];
+      for(const r of all){
+        const row=[r.id,escCsv(r.name),escCsv(r.fatherName),escCsv(r.phone),escCsv(r.address),new Date(r.createdAt).toISOString()].join(',');
+        lines.push(row);
+      }
+      const blob=new Blob(["\uFEFF"+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+      download('PAWAR_export.csv',blob);
+    }
+    function escCsv(s){
+      s=String(s??'');
+      if(/[",\n]/.test(s)) return '"'+s.replace(/"/g,'""')+'"';
+      return s;
+    }
+    async function exportJSON(){
+      const all=await getAll();
+      const safe=all.map(({photo,...rest})=>rest); // meta without photo (to keep file small)
+      const blob=new Blob([JSON.stringify({meta:{app:'PAWAR',ver:1,date:new Date().toISOString()},data:safe},null,2)],{type:'application/json'});
+      download('PAWAR_export.json',blob);
+    }
+    function importJSONFile(file){
+      const reader=new FileReader();
+      reader.onload=async ()=>{
+        try{
+          const json=JSON.parse(reader.result);
+          if(!json||!Array.isArray(json.data)) throw new Error('Invalid JSON');
+          for(const r of json.data){
+            const rec={name:r.name||'', fatherName:r.fatherName||'', phone:r.phone||'', address:r.address||'', photo:null, createdAt:r.createdAt?new Date(r.createdAt).getTime():Date.now()};
+            await addEntry(rec);
+          }
+          state.all=await getAll();
+          applyFilters();
+          alert('Import complete');
+        }catch(err){ alert('Import failed: '+err.message) }
+      };
+      reader.readAsText(file);
+    }
+
+    // ----------------- Form Handling -----------------
+    document.getElementById('entryForm').addEventListener('submit', async (e)=>{
+      e.preventDefault();
+      const idStr=document.getElementById('editId').value;
+      const name=document.getElementById('name').value.trim();
+      const fatherName=document.getElementById('fatherName').value.trim();
+      const phone=document.getElementById('phone').value.trim();
+      const address=document.getElementById('address').value.trim();
+      const photoFile=document.getElementById('photo').files[0];
+      if(phone && !/^\d{10}$/.test(phone)) return alert('कृपया 10 अंकों का सही मोबाइल नंबर डालें');
+      const blob=await fileToCompressedBlob(photoFile).catch(()=>null);
+      const payload={name,fatherName,phone,address};
+
+      if(idStr){
+        await updateEntry(Number(idStr), {...payload, ...(blob?{photo:blob}:{})});
+        alert('Updated');
+      }else{
+        await addEntry({...payload, photo:blob||null, createdAt:Date.now()});
+        // Keep recent feel
+      }
+      state.all=await getAll();
+      clearForm();
+      applyFilters();
+    });
+
+    function clearForm(){
+      document.getElementById('editId').value='';
+      document.getElementById('entryForm').reset();
+      document.getElementById('saveBtn').textContent='Save';
+    }
+    document.getElementById('resetBtn').addEventListener('click', clearForm);
+
+    document.getElementById('tbody').addEventListener('click', async (e)=>{
+      const btn=e.target.closest('button'); if(!btn) return;
+      const id=Number(btn.dataset.id);
+      const act=btn.dataset.act;
+      if(act==='del'){
+        if(confirm('Delete this record?')){ await deleteEntry(id); state.all=await getAll(); applyFilters(); }
+      }
+      if(act==='edit'){
+        const rec=state.all.find(x=>x.id===id); if(!rec) return;
+        document.getElementById('editId').value=rec.id;
+        document.getElementById('name').value=rec.name||'';
+        document.getElementById('fatherName').value=rec.fatherName||'';
+        document.getElementById('phone').value=rec.phone||'';
+        document.getElementById('address').value=rec.address||'';
+        document.getElementById('saveBtn').textContent='Update';
+        window.scrollTo({top:0,behavior:'smooth'});
+      }
+    });
+
+    // Tools
+    document.getElementById('search').addEventListener('input',(e)=>{state.search=e.target.value; state.page=1; applyFilters();});
+    document.getElementById('sortBy').addEventListener('change',(e)=>{state.sortBy=e.target.value; applyFilters();});
+    document.getElementById('pageSize').addEventListener('change',(e)=>{state.pageSize=Number(e.target.value); state.page=1; applyFilters();});
+    document.getElementById('prev').addEventListener('click',()=>{ if(state.page>1){state.page--; renderTable(); document.getElementById('pageInfo').scrollIntoView({behavior:'smooth',block:'center'});} });
+    document.getElementById('next').addEventListener('click',()=>{ const max=Math.max(1,Math.ceil(state.filtered.length/state.pageSize)); if(state.page<max){state.page++; renderTable(); document.getElementById('pageInfo').scrollIntoView({behavior:'smooth',block:'center'});} });
+
+    document.getElementById('exportCsv').addEventListener('click',exportCSV);
+    document.getElementById('exportJson').addEventListener('click',exportJSON);
+    document.getElementById('importJsonFile').addEventListener('change',e=>{ if(e.target.files[0]) importJSONFile(e.target.files[0]); e.target.value=''; });
+
+    document.getElementById('clearAll').addEventListener('click', async ()=>{
+      if(confirm('सभी रिकॉर्ड्स हट जाएँगे. पक्का?')){ await clearAll(); state.all=[]; applyFilters(); }
+    });
+
+    // Demo data
+    document.getElementById('dummyBtn').addEventListener('click', async ()=>{
+      const names=['Aarav','Vivaan','Aditya','Vihaan','Arjun','Sai','Reyansh','Krish','Ishaan','Shivansh'];
+      for(let i=0;i<10;i++){
+        await addEntry({name:names[i%names.length]+" "+(Math.floor(Math.random()*90)+10), fatherName:'Shri '+names[(i+3)%names.length], phone:'9'+String(Math.floor(1e9+Math.random()*9e8)).slice(0,9), address:'City '+(i+1)+', India', photo:null, createdAt:Date.now()+i});
+      }
+      state.all=await getAll(); applyFilters();
+    });
+
+    // ----------------- Init -----------------
+    (async function init(){
+      document.getElementById('year').textContent=new Date().getFullYear();
+      await openDB();
+      state.all=await getAll();
+      applyFilters();
+    })();
+  </script>
+</body>
+</html>
